@@ -86,24 +86,24 @@ def make_displayed_rectangles(combinations):
     """
     Given a table like that produced by compute_combination_data, produces
     a new version of the table that includes the Rectangle objects to draw
-    when displaying each category in an icon array.  The objects are drawn
-    in a 10x10 grid.  Sometimes the whole grid isn't drawn.
+    when displaying each category in an icon array. The objects are drawn
+    in a 10x10 grid. Sometimes the whole grid isn't drawn.
     """
     n = combinations.num_rows
     displays = combinations.copy()
     total_count = sum(displays.column("count"))
     if 1 < total_count < 100:
-      # Use counts instead of percentages to make a clearer visualization.
-      amount_column = "count"
+        # Use counts instead of percentages to make a clearer visualization.
+        amount_column = "count"
     else:
-      amount_column = "percentage"
+        amount_column = "percentage"
 
     displays.append_column("start amount", np.cumsum(np.append([0], displays.column(amount_column)))[0:n])
     displays.append_column("end amount", np.cumsum(displays.column(amount_column)))
 
     SQUARE_SIZE = .1
     SQUARE_PADDING = .01
-    DRAWN_SQUARE_SIZE = SQUARE_SIZE - 2*SQUARE_PADDING
+    DRAWN_SQUARE_SIZE = SQUARE_SIZE - 2 * SQUARE_PADDING
 
     def square_logical_coordinates(start_percentile, end_percentile):
         percentile = int(np.floor(start_percentile))
@@ -112,9 +112,6 @@ def make_displayed_rectangles(combinations):
     def square_bottom_left(logical_x, logical_y):
         return (logical_x / 10, logical_y / 10)
 
-    # Coordinates of the bottom-left of a rectangle inside its square.
-    # (0, 0) is the bottom-left of the square, and the square has a side
-    # length of 1.
     def bottom_left_in_square(start_percentile, end_percentile):
         percentile = int(np.floor(start_percentile))
         left_end = start_percentile - percentile
@@ -124,22 +121,90 @@ def make_displayed_rectangles(combinations):
         (logical_x, logical_y) = square_logical_coordinates(start_percentile, end_percentile)
         (square_x, square_y) = square_bottom_left(logical_x, logical_y)
         (x_in_square, y_in_square) = bottom_left_in_square(start_percentile, end_percentile)
-        absolute_x = square_x + SQUARE_PADDING + DRAWN_SQUARE_SIZE*x_in_square
-        absolute_y = square_y + SQUARE_PADDING + DRAWN_SQUARE_SIZE*y_in_square
+        absolute_x = square_x + SQUARE_PADDING + DRAWN_SQUARE_SIZE * x_in_square
+        absolute_y = square_y + SQUARE_PADDING + DRAWN_SQUARE_SIZE * y_in_square
         rectangle_proportion = end_percentile - start_percentile
-        return patches.Rectangle((absolute_x, absolute_y), rectangle_proportion*DRAWN_SQUARE_SIZE, DRAWN_SQUARE_SIZE, facecolor=color)
+        return patches.Rectangle(
+            (absolute_x, absolute_y),
+            rectangle_proportion * DRAWN_SQUARE_SIZE,
+            DRAWN_SQUARE_SIZE,
+            facecolor=color,
+        )
 
     def rectangles_for_percentage_range(start, end, color):
         rectangles = []
         for percentile in range(int(np.floor(start)), int(np.ceil(end))):
             start_percentile = max(start, percentile)
-            end_percentile = min(end, percentile+1)
+            end_percentile = min(end, percentile + 1)
             rectangles.append(rectangle_for_percentile(start_percentile, end_percentile, color))
+        # Return a flattened list of rectangles
         return rectangles
 
-    displays.append_column("rectangles", displays.apply(rectangles_for_percentage_range, ["start amount", "end amount", "color"]))
+    # Flatten the list of rectangles before appending
+    displays.append_column("rectangles", displays.apply(lambda start, end, color: rectangles_for_percentage_range(start, end, color), ["start amount", "end amount", "color"]))
 
     return displays
+
+
+
+# def make_displayed_rectangles(combinations):
+#     """
+#     Given a table like that produced by compute_combination_data, produces
+#     a new version of the table that includes the Rectangle objects to draw
+#     when displaying each category in an icon array.  The objects are drawn
+#     in a 10x10 grid.  Sometimes the whole grid isn't drawn.
+#     """
+#     n = combinations.num_rows
+#     displays = combinations.copy()
+#     total_count = sum(displays.column("count"))
+#     if 1 < total_count < 100:
+#       # Use counts instead of percentages to make a clearer visualization.
+#       amount_column = "count"
+#     else:
+#       amount_column = "percentage"
+
+#     displays.append_column("start amount", np.cumsum(np.append([0], displays.column(amount_column)))[0:n])
+#     displays.append_column("end amount", np.cumsum(displays.column(amount_column)))
+
+#     SQUARE_SIZE = .1
+#     SQUARE_PADDING = .01
+#     DRAWN_SQUARE_SIZE = SQUARE_SIZE - 2*SQUARE_PADDING
+
+    # def square_logical_coordinates(start_percentile, end_percentile):
+    #     percentile = int(np.floor(start_percentile))
+    #     return (percentile % 10, percentile // 10)
+
+    # def square_bottom_left(logical_x, logical_y):
+    #     return (logical_x / 10, logical_y / 10)
+
+    # # Coordinates of the bottom-left of a rectangle inside its square.
+    # # (0, 0) is the bottom-left of the square, and the square has a side
+    # # length of 1.
+    # def bottom_left_in_square(start_percentile, end_percentile):
+    #     percentile = int(np.floor(start_percentile))
+    #     left_end = start_percentile - percentile
+    #     return (left_end, 0)
+
+#     def rectangle_for_percentile(start_percentile, end_percentile, color):
+#         (logical_x, logical_y) = square_logical_coordinates(start_percentile, end_percentile)
+#         (square_x, square_y) = square_bottom_left(logical_x, logical_y)
+#         (x_in_square, y_in_square) = bottom_left_in_square(start_percentile, end_percentile)
+#         absolute_x = square_x + SQUARE_PADDING + DRAWN_SQUARE_SIZE*x_in_square
+#         absolute_y = square_y + SQUARE_PADDING + DRAWN_SQUARE_SIZE*y_in_square
+#         rectangle_proportion = end_percentile - start_percentile
+#         return patches.Rectangle((absolute_x, absolute_y), rectangle_proportion*DRAWN_SQUARE_SIZE, DRAWN_SQUARE_SIZE, facecolor=color)
+
+#     def rectangles_for_percentage_range(start, end, color):
+#         rectangles = []
+#         for percentile in range(int(np.floor(start)), int(np.ceil(end))):
+#             start_percentile = max(start, percentile)
+#             end_percentile = min(end, percentile+1)
+#             rectangles.append(rectangle_for_percentile(start_percentile, end_percentile, color))
+#         return rectangles
+
+#     displays.append_column("rectangles", displays.apply(rectangles_for_percentage_range, ["start amount", "end amount", "color"]))
+
+#     return displays
 
 def draw_plot(displays, individuals_name):
     """
